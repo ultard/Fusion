@@ -1,0 +1,36 @@
+services:
+  backend:
+    container_name: 'fusion-backend'
+    image: fusion-backend:latest
+    restart: unless-stopped
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - ${APP_PORT}:${APP_PORT}
+    env_file:
+      - .env
+    depends_on:
+      - postgresql
+  postgresql:
+    container_name: 'fusion-postgres'
+    hostname: 'postgres'
+    image: postgres:alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_PORT: ${DATABASE_PORT}
+    ports:
+      - ${DATABASE_PORT}:${DATABASE_PORT}
+    volumes:
+      - fusion-postgres:/var/lib/postgresql/data
+
+volumes:
+  fusion-postgres:
+
+networks:
+  fusion:
+    driver: bridge
