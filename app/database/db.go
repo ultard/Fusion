@@ -51,11 +51,13 @@ func ConnectDB(config utils.AppConfig) (*gorm.DB, error) {
 		&models.Permissions{},
 		&models.Session{},
 		&models.Verification{},
-		&models.Order{},
 		&models.Product{},
 		&models.Category{},
 		&models.Review{},
 		&models.Favourite{},
+		&models.Cart{},
+		&models.Order{},
+		&models.OrderProduct{},
 	); err != nil {
 		return nil, err
 	}

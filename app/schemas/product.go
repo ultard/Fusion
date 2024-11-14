@@ -1,12 +1,14 @@
 package schemas
 
+import "fusion/app/database/models"
+
 type ProductResponse struct {
-	ID          string    `json:"ID"`
-	UserId      string    `json:"UserId"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Price       int       `json:"price"`
-	Image       *string   `json:"Image,omitempty"`
-	Categories  *[]string `json:"Categories,omitempty"`
-	Reviews     *[]string `json:"Reviews,omitempty"`
+	ID          string             `json:"id"`
+	UserID      string             `json:"user_id"`
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	Price       float64            `json:"price"`
+	Image       *string            `json:"image,omitempty"`
+	Categories  *[]models.Category `json:"categories,omitempty"`
+	Reviews     *[]models.Review   `json:"reviews,omitempty"`
 }

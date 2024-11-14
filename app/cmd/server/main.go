@@ -49,6 +49,7 @@ func main() {
 	handlers.RegisterUserRoutes(app, db)
 	handlers.RegisterProductRoutes(app, db)
 	handlers.RegisterOrderRoutes(app, db)
+	handlers.RegisterCartRoute(app, db)
 
 	app.Listen(":" + config.AppPort)
 	defer app.Shutdown()

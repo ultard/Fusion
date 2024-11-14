@@ -3,6 +3,7 @@ package handlers
 import (
 	"fusion/app/database/models"
 	"fusion/app/middleware"
+	"fusion/app/schemas"
 	"fusion/app/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -43,45 +44,65 @@ func (h *OrderHandler) GetOrders(c *fiber.Ctx) error {
 	return c.JSON(orders)
 }
 
-// CreateOrder создает новый заказ или добавляет продукты в существующий заказ в статусе STAGING
+// CreateOrder создает новый заказ из выбранных товаров корзины
 func (h *OrderHandler) CreateOrder(c *fiber.Ctx) error {
 	user := c.Locals("current_user").(models.User)
 
-	type CreateOrderInput struct {
-		ProductIDs []uuid.UUID `json:"product_ids"`
-	}
-
-	var input CreateOrderInput
+	// Получаем данные из запроса
+	var input schemas.CreateOrderRequest
 	if err := c.BodyParser(&input); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid input")
 	}
 
-	// Проверяем, есть ли существующий заказ в статусе STAGING
-	var order models.Order
-	if err := h.db.Where("user_id = ? AND status = ?", user.ID, models.STAGING).First(&order).Error; err != nil {
-		// Создаем новый заказ, если текущий в статусе STAGING не найден
-		order = models.Order{
-			ID:     uuid.New(),
-			UserID: user.ID,
-			Status: models.STAGING,
-		}
-		if err := h.db.Create(&order).Error; err != nil {
-			return fiber.NewError(fiber.StatusInternalServerError, "could not create order")
+	// Проверяем наличие корзины для текущего пользователя
+	var cart models.Cart
+	if err := h.db.Preload("Products").Where("user_id = ?", user.ID).First(&cart).Error; err != nil {
+		return fiber.NewError(fiber.StatusNotFound, "cart not found")
+	}
+
+	// Создаем новый заказ
+	order := models.Order{
+		UserID: user.ID,
+		Status: models.CREATED, // Или другой статус по умолчанию
+	}
+	if err := h.db.Create(&order).Error; err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "could not create order")
+	}
+
+	var orderProducts []models.CartProduct
+	var productsToRemove []uuid.UUID
+	for _, selectedProduct := range input.CartProductResponse {
+		for _, cartProduct := range cart.Products {
+			if cartProduct.ProductID.String() == selectedProduct.ID {
+				orderProduct := models.CartProduct{
+					CartID:    order.ID,
+					ProductID: cartProduct.ProductID,
+					Quantity:  cartProduct.Quantity,
+				}
+
+				orderProducts = append(orderProducts, orderProduct)
+				productsToRemove = append(productsToRemove, cartProduct.ID)
+				break
+			}
 		}
 	}
 
-	// Получаем продукты по переданным ID и добавляем их в заказ
-	var products []models.Product
-	if err := h.db.Where("id IN ?", input.ProductIDs).Find(&products).Error; err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "could not find products")
-	}
-
-	// Ассоциируем продукты с заказом
-	if err := h.db.Model(&order).Association("Products").Append(&products); err != nil {
+	if err := h.db.Model(&order).Association("Products").Append(orderProducts); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "could not add products to order")
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(order)
+	if err := h.db.Where("id IN ?", productsToRemove).Delete(&models.CartProduct{}).Error; err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "could not remove products from cart")
+	}
+
+	response := schemas.CreateOrderResponse{
+		ID:           order.ID.String(),
+		CartProducts: orderProducts,
+		UserID:       order.UserID.String(),
+		Status:       int(order.Status),
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(response)
 }
 
 // UpdateOrderStatus обновляет статус заказа по ID

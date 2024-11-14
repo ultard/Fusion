@@ -3,6 +3,7 @@ package handlers
 import (
 	"fusion/app/database/models"
 	"fusion/app/middleware"
+	"fusion/app/schemas"
 	"fusion/app/utils"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -12,14 +13,11 @@ type ProductHandler struct {
 	db *gorm.DB
 }
 
-// NewProductHandler создает новый обработчик для продуктов
-func NewProductHandler(db *gorm.DB) *ProductHandler {
-	return &ProductHandler{db: db}
-}
-
 // RegisterProductRoutes регистрирует маршруты для продуктов
 func RegisterProductRoutes(app *fiber.App, db *gorm.DB) {
-	handler := NewProductHandler(db)
+	handler := &ProductHandler{
+		db: db,
+	}
 
 	productGroup := app.Group("/products")
 	productGroup.Get("/", handler.GetProducts)
@@ -40,10 +38,29 @@ func RegisterProductRoutes(app *fiber.App, db *gorm.DB) {
 // GetProducts возвращает список всех продуктов
 func (h *ProductHandler) GetProducts(c *fiber.Ctx) error {
 	var products []models.Product
-	if err := h.db.Preload("Reviews").Find(&products).Error; err != nil {
+	if err := h.db.
+		Preload("Review").
+		Preload("Category").
+		Find(&products).
+		Error; err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "could not retrieve products")
 	}
-	return c.JSON(products)
+
+	response := make([]schemas.ProductResponse, len(products))
+	for i, product := range products {
+		response[i] = schemas.ProductResponse{
+			ID:          product.ID.String(),
+			UserID:      product.UserID.String(),
+			Name:        product.Name,
+			Description: product.Description,
+			Price:       product.Price,
+			Image:       product.Image,
+			Categories:  product.Categories,
+			Reviews:     product.Reviews,
+		}
+	}
+
+	return c.JSON(response)
 }
 
 // GetProduct возвращает продукт по ID
@@ -54,11 +71,26 @@ func (h *ProductHandler) GetProduct(c *fiber.Ctx) error {
 	}
 
 	var product models.Product
-	if err := h.db.Preload("Reviews").First(&product, "id = ?", parsedId).Error; err != nil {
+	if err := h.db.
+		Preload("Review").
+		Preload("Category").
+		First(&product, "id = ?", parsedId).
+		Error; err != nil {
 		return fiber.NewError(fiber.StatusNotFound, "product not found")
 	}
 
-	return c.JSON(product)
+	response := schemas.ProductResponse{
+		ID:          product.ID.String(),
+		UserID:      product.UserID.String(),
+		Name:        product.Name,
+		Description: product.Description,
+		Price:       product.Price,
+		Image:       product.Image,
+		Categories:  product.Categories,
+		Reviews:     product.Reviews,
+	}
+
+	return c.JSON(response)
 }
 
 // CreateProduct создает новый продукт

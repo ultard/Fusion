@@ -25,6 +25,7 @@ type User struct {
 	Favourites    []Favourite
 	Sessions      []Session
 	Orders        []Order
+	Cart          *Cart
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

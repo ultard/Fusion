@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"fmt"
 	"fusion/app/database/models"
 	"fusion/app/utils"
 	"github.com/go-playground/validator/v10"
@@ -97,7 +96,6 @@ func (h AuthRoute) Register(c *fiber.Ctx) error {
 		}
 	}
 
-	fmt.Println(h.config.VerificationExpire)
 	token := uuid.New().String()
 	verification := models.Verification{
 		Type:      "EMAIL_VERIFY",
