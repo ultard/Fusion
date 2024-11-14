@@ -10,7 +10,7 @@ Fiber, GORM, RabbitMQ и PostgreSQL, а для развертывания исп
 
 - **Fiber** — веб-фреймворк для создания высокопроизводительных и минималистичных HTTP-серверов.
 - **GORM** — ORM для работы с базой данных PostgreSQL.
-- **RabbitMQ** — брокер сообщений для организации очередей, используется для обработки и доставки событий.
+[//]: # (- **RabbitMQ** — брокер сообщений для организации очередей, используется для обработки и доставки событий.)
 - **PostgreSQL** — реляционная база данных для хранения данных о товарах, заказах и клиентах.
 - **Docker** — контейнеризация приложения для упрощенного развертывания и масштабирования.
 - **Kubernetes** — оркестрация контейнеров для управления микросервисами и поддержания отказоустойчивости.
@@ -26,15 +26,21 @@ Fiber, GORM, RabbitMQ и PostgreSQL, а для развертывания исп
 
 ```plaintext
 ├── app
-│   ├── controllers       # Логика обработки запросов и маршрутов
-│   ├── models            # Модели GORM для базы данных
-│   ├── repositories      # Слой доступа к данным
-│   ├── services          # Бизнес-логика
-│   ├── routes            # Определение маршрутов для API
-│   └── main.go           # Главный файл приложения
-├── config                # Конфигурационные файлы приложения
-├── Dockerfile            # Dockerfile для создания образа приложения
+│   ├── cmd
+│   │   └── server               # Конфигурация и запуск HTTP-сервера
+│   │       └── main.go           # Точка входа приложения
+│   ├── database            # Подключение к базе данных
+│   │   └── models            # Модели GORM для базы данных
+│   ├── middleware        # Промежуточное ПО для обработки запросов
+│   ├── handlers          # Определение маршрутов для API
+│   ├── schemas           # Схемы для валидации данных 
+│   ├── templates         # Шаблоны для генерации почты
+│   └── utils             # Вспомогательные функции и утилиты
+├── docs                  # Документация API
 ├── k8s                   # Манифесты Kubernetes для деплоя
+├── Dockerfile            # Dockerfile для создания образа приложения
+├── docker-compose.yml    # Docker Compose для локального развертывания
+├── .env.example          # Пример файла с переменными окружения
 └── README.md             # Документация
 ```
 
@@ -45,32 +51,24 @@ Fiber, GORM, RabbitMQ и PostgreSQL, а для развертывания исп
 - Docker
 - Docker Compose
 - Kubernetes (minikube или другая платформа)
-- RabbitMQ и PostgreSQL (настраиваются через Docker Compose)
+- PostgreSQL (настраиваются через Docker Compose)
 
 ### 2. Установка и запуск в локальной среде
 
 1. Клонируйте репозиторий:
    ```bash
-   git clone https://github.com/yourusername/shop.git
-   cd shop
+   git clone https://github.com/ultar/fusion.git
+   cd fusion
    ```
 
-2. Настройте переменные окружения в файле `.env`:
-   ```plaintext
-   DB_HOST=postgres
-   DB_PORT=5432
-   DB_USER=youruser
-   DB_PASSWORD=yourpassword
-   DB_NAME=shopdb
-   RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
-   ```
+2. Скопируйте `.env.example` и настройте переменные окружения в файле `.env`:
 
 3. Соберите Docker-образы и запустите контейнеры:
    ```bash
    docker-compose up --build
    ```
 
-4. Приложение будет доступно по адресу `http://localhost:3000`.
+4. Приложение будет доступно по адресу `http://localhost:8080`.
 
 ### 3. Развертывание в Kubernetes
 
@@ -93,6 +91,21 @@ Fiber, GORM, RabbitMQ и PostgreSQL, а для развертывания исп
 
 ## API-эндпойнты
 
+### Клиенты
+- **GET /users/{id}** — Получить информацию о пользователе по ID
+- **GET /users/me** — Получить информацию о текущем пользователе
+- **PATCH /users/me** — Обновить информацию о текущем пользователе
+- **DELETE /users/me** — Удалить текущего пользователя
+
+### Аутентификация
+- **POST /auth/register** — Регистрация нового пользователя
+- **POST /auth/login** — Вход пользователя в систему
+- **POST /auth/logout** — Выход пользователя из системы
+- **POST /auth/refresh** — Обновление токена доступа
+- **POST /auth/reset-password** — Запрос на сброс пароля
+- **POST /auth/change-password** — Смена пароля
+- **POST /auth/verify-email** — Подтверждение email
+
 ### Товары
 
 - **GET /products** — Получить список всех товаров
@@ -101,10 +114,24 @@ Fiber, GORM, RabbitMQ и PostgreSQL, а для развертывания исп
 - **PUT /products/{id}** — Обновить товар по ID
 - **DELETE /products/{id}** — Удалить товар по ID
 
+- **POST /products/{id}/reviews** — Создать отзыв к товару
+- **DELETE /products/{id}/reviews** — Удалить отзыв к товару
+
+- **POST /products/{id}/favourites** — Добавить товар в избранное
+- **DELETE /products/{id}/favourites** — Удалить товар из избранного
+
+### Корзина
+- **GET /cart** — Получить содержимое корзины
+- **POST /cart** — Добавить товар в корзину
+- **PUT /cart** — Обновить товар в корзине
+- **DELETE /cart** — Очистить корзину
+
 ### Заказы
 
 - **GET /orders** — Получить список всех заказов
 - **POST /orders** — Создать новый заказ
+- **PUT /orders/{id}** — Обновить заказ по ID
+- **DELETE /orders/{id}** — Удалить заказ по ID
 
 ### Пример запроса
 
