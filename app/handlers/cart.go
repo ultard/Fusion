@@ -22,6 +22,7 @@ func RegisterCartRoute(app *fiber.App, db *gorm.DB) {
 	cartGroup.Use(middleware.AuthMiddleware())
 	cartGroup.Get("/cart", handler.GetCart)
 	cartGroup.Post("/cart", handler.AddToCart)
+	cartGroup.Put("/cart", handler.UpdateCart)
 	cartGroup.Delete("/cart", handler.RemoveFromCart)
 }
 
@@ -120,6 +121,58 @@ func (h *CartRoute) AddToCart(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(response)
+}
+
+func (h *CartRoute) UpdateCart(c *fiber.Ctx) error {
+	type UpdateCartInput struct {
+		ProductID string `json:"product_id"`
+		Quantity  int    `json:"quantity"`
+	}
+
+	user := c.Locals("current_user").(models.User)
+
+	var input UpdateCartInput
+	if err := c.BodyParser(&input); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid input")
+	}
+
+	var product models.Product
+	if err := h.db.First(&product, "id = ?", input.ProductID).Error; err != nil {
+		return fiber.NewError(fiber.StatusNotFound, "product not found")
+	}
+
+	var cart models.Cart
+	if err := h.db.
+		Preload("Products").
+		Where("user_id = ?", user.ID).
+		First(&cart).
+		Error; err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "could not retrieve cart")
+	}
+
+	for _, p := range cart.Products {
+		if p.ProductID == product.ID {
+			p.Quantity = input.Quantity
+			if err := h.db.Save(&p).Error; err != nil {
+				return fiber.NewError(fiber.StatusInternalServerError, "could not update product in cart")
+			}
+		}
+	}
+
+	response := schemas.CartResponse{
+		ID:       cart.ID.String(),
+		UserID:   cart.UserID.String(),
+		Products: make([]schemas.CartProductResponse, len(cart.Products)),
+	}
+
+	for i, p := range cart.Products {
+		response.Products[i] = schemas.CartProductResponse{
+			ID:       p.ID.String(),
+			Quantity: p.Quantity,
+		}
+	}
+
+	return c.Status(fiber.StatusAccepted).JSON(response)
 }
 
 func (h *CartRoute) RemoveFromCart(c *fiber.Ctx) error {

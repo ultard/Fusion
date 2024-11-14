@@ -115,19 +115,13 @@ func (h *ProductHandler) UpdateProduct(c *fiber.Ctx) error {
 	}
 
 	user := c.Locals("current_user").(models.User)
-	var product models.Product
 
+	var product models.Product
 	if err := h.db.Where("id = ? AND user_id = ?", parsedId, user.ID).First(&product).Error; err != nil {
 		return fiber.NewError(fiber.StatusNotFound, "product not found or access denied")
 	}
 
-	var updateFields struct {
-		Name        *string  `json:"name"`
-		Description *string  `json:"description"`
-		Price       *float64 `json:"price"`
-		Image       *string  `json:"image"`
-	}
-
+	var updateFields schemas.ProductUpdateRequest
 	if err := c.BodyParser(&updateFields); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid input")
 	}
@@ -138,9 +132,23 @@ func (h *ProductHandler) UpdateProduct(c *fiber.Ctx) error {
 	if updateFields.Description != nil {
 		product.Description = *updateFields.Description
 	}
+	if updateFields.Image != nil {
+		product.Image = updateFields.Image
+	}
 	if updateFields.Price != nil {
 		product.Price = *updateFields.Price
 	}
+	if updateFields.Stock != nil {
+		product.Stock = *updateFields.Stock
+	}
+	if updateFields.Categories != nil {
+		var categories []models.Category
+		for _, categoryName := range *updateFields.Categories {
+			categories = append(categories, models.Category{Name: categoryName})
+		}
+		product.Categories = &categories
+	}
+
 	product.Image = updateFields.Image
 
 	if err := h.db.Save(&product).Error; err != nil {

@@ -1,27 +1,31 @@
 package handlers
 
 import (
-	"fmt"
 	"fusion/app/database/models"
 	"fusion/app/middleware"
 	"fusion/app/schemas"
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type UsersRoute struct {
-	db *gorm.DB
+	db       *gorm.DB
+	validate *validator.Validate
 }
 
 func RegisterUserRoutes(app *fiber.App, db *gorm.DB) {
-	handler := UsersRoute{db: db}
+	handler := UsersRoute{
+		db:       db,
+		validate: validator.New(),
+	}
 
 	userGroup := app.Group("/users")
 	meGroup := userGroup.Group("/me")
 	meGroup.Use(middleware.AuthMiddleware())
 	meGroup.Get("/", handler.getCurrentUser)
-	meGroup.Put("/avatar", handler.uploadUserAvatar)
+	meGroup.Patch("/", handler.updateUser)
 	meGroup.Delete("/", handler.deleteUser)
 
 	userGroup.Get("/:id", handler.getUserById)
@@ -62,26 +66,28 @@ func (h UsersRoute) getUserById(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
-func (h UsersRoute) uploadUserAvatar(c *fiber.Ctx) error {
+func (h UsersRoute) updateUser(c *fiber.Ctx) error {
 	user := c.Locals("current_user").(models.User)
-
-	file, err := c.FormFile("avatar")
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid input")
+	var input schemas.UserUpdateRequest
+	if err := c.BodyParser(&input); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "could not parse request body")
 	}
 
-	// TODO: сделать отправку на minio
-	if err := c.SaveFile(file, fmt.Sprintf("./uploads/%s", file.Filename)); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "could not save file")
+	if input.Username != nil {
+		user.Username = *input.Username
+	}
+	if input.Email != nil {
+		user.Email = *input.Email
+	}
+	if input.Avatar != nil {
+		user.Avatar = input.Avatar
 	}
 
-	user.Avatar = &file.Filename
 	if err := h.db.Save(&user).Error; err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "could not update user")
 	}
 
 	return c.SendStatus(fiber.StatusAccepted)
-
 }
 
 // deleteUser удаляет пользователя по ID

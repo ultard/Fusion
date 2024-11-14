@@ -35,6 +35,7 @@ func RegisterAuthRoutes(app *fiber.App, db *gorm.DB, config utils.AppConfig, jwt
 	authGroup.Post("/logout", handler.Logout)
 	authGroup.Post("/refresh", handler.Refresh)
 	authGroup.Post("/reset-password", handler.ResetPassword)
+	authGroup.Post("/change-password", handler.VerifyPasswordReset)
 	authGroup.Post("/verify-email", handler.VerifyEmail)
 }
 

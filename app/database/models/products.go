@@ -12,6 +12,7 @@ type Product struct {
 	Name        string  `json:"name"`
 	Description string  `json:"description"`
 	Price       float64 `json:"price" gorm:"type:decimal(10,2)"`
+	Stock       int     `json:"stock"`
 	Image       *string
 	Categories  *[]Category `gorm:"many2many:product_category;"`
 	Reviews     *[]Review
