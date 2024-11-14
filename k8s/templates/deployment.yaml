@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-app
+spec:
+  replicas: {{ .Values.app.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-app
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-app
+    spec:
+      containers:
+        - name: {{ .Release.Name }}-app
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}"
+          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.app.service.port }}
+          env:
+            - name: DATABASE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-config
+                  key: DATABASE_HOST
+            - name: DATABASE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-config
+                  key: DATABASE_PORT
+            - name: DATABASE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-config
+                  key: DATABASE_NAME
+            - name: DATABASE_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-config
+                  key: DATABASE_USER
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secret
+                  key: password
+            - name: EMAIL_HOST
+              value: {{ .Values.env.email.smtpHost | quote }}
+            - name: EMAIL_PORT
+              value: {{ .Values.env.email.smtpPort | quote }}
+            - name: EMAIL_USERNAME
+              value: {{ .Values.env.email.username | quote }}
+            - name: EMAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secret
+                  key: emailPassword
+            - name: EMAIL_SENDER
+              value: {{ .Values.env.email.sender | quote }}
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secret
+                  key: sessionSecret
+            - name: SESSION_EXPIRE
+              value: {{ .Values.env.auth.sessionExpire | quote }}
+            - name: REFRESH_EXPIRE
+              value: {{ .Values.env.auth.refreshExpire | quote }}
+            - name: VERIFICATION_EXPIRE
+              value: {{ .Values.env.auth.verificationExpire | quote }}
+            - name: APP_PORT
+              value: {{ .Values.app.service.port | quote }}
+            - name: APP_VERSION
+              value: {{ .Values.app.version | quote }}
+

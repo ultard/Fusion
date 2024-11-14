@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+data:
+  DATABASE_HOST: {{ .Values.env.db.host | quote }}
+  DATABASE_PORT: {{ .Values.postgresql.primary.service.ports.postgresql | quote }}
+  DATABASE_NAME: {{ .Values.postgresql.auth.database | quote }}
+  DATABASE_USER: {{ .Values.postgresql.auth.username | quote }}

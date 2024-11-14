@@ -1,0 +1,43 @@
+postgresql:
+  auth:
+    username: postgres
+    password: secret
+    database: fusion
+  primary:
+    persistence:
+      enabled: true
+      size: 5Gi
+    service:
+      type: LoadBalancer
+      ports:
+        postgresql: 5432
+
+app:
+  name: Fusion
+  version: 0.1.0
+  replicaCount: 1
+  image:
+    repository: fusion-backend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8080
+
+env:
+  db:
+    host: fusion-postgresql
+
+  auth:
+    sessionSecret: secret
+    sessionExpire: 30m
+    refreshExpire: 360h
+    verificationExpire: 1h
+
+  email:
+    smtpHost: smtp.mail.ru
+    smtpPort: 587
+    username: ultar@tercode.ru
+    password: secret
+    sender: Fusion
