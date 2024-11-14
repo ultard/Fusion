@@ -27,7 +27,7 @@ app:
 
 env:
   db:
-    host: fusion-postgresql
+    host: fusion-backend-postgresql
 
   auth:
     sessionSecret: secret
