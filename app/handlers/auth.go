@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"fusion/app/database/models"
 	"fusion/app/utils"
 	"github.com/go-playground/validator/v10"
@@ -121,6 +122,7 @@ func (h AuthRoute) Register(c *fiber.Ctx) error {
 	}
 
 	if err := h.email.SendEmail(user.Email, "Verify email", "verify_email", data); err != nil {
+		fmt.Println(err)
 		return fiber.NewError(fiber.StatusInternalServerError, "could not send verification email")
 	}
 
