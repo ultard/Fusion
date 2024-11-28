@@ -16,6 +16,7 @@ type AppConfig struct {
 
 	AppVersion string `env:"APP_VERSION"`
 	AppPort    string `env:"APP_PORT"`
+	AppEnv     string `env:"APP_ENV"`
 
 	SessionSecret      string        `env:"SESSION_SECRET"`
 	SessionExpire      time.Duration `env:"SESSION_EXPIRE"`
@@ -48,6 +49,7 @@ func (config *AppConfig) LoadConfig() error {
 
 	viper.BindEnv("AppVersion", "APP_VERSION")
 	viper.BindEnv("AppPort", "APP_PORT")
+	viper.BindEnv("AppEnv", "APP_ENV")
 
 	viper.BindEnv("SessionSecret", "SESSION_SECRET")
 	viper.BindEnv("SessionExpire", "SESSION_EXPIRE")

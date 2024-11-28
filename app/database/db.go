@@ -13,28 +13,43 @@ import (
 )
 
 func ConnectDB(config utils.AppConfig) (*gorm.DB, error) {
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s",
 		config.DatabaseHost, config.DatabasePort, config.DatabaseUser, config.DatabasePassword, config.DatabaseName)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.New(
-			log.New(os.Stdout, "\r\n", log.LstdFlags),
-			logger.Config{
-				SlowThreshold:             time.Second,
-				LogLevel:                  logger.Info,
-				IgnoreRecordNotFoundError: true,
-				Colorful:                  true,
-			},
-		),
-	})
+	var gormConfig gorm.Config
 
+	if config.AppEnv == "production" {
+		gormConfig = gorm.Config{
+			Logger: logger.New(
+				log.New(os.Stdout, "\r\n", log.LstdFlags),
+				logger.Config{
+					SlowThreshold:             time.Second,
+					LogLevel:                  logger.Error,
+					IgnoreRecordNotFoundError: true,
+				},
+			),
+		}
+	} else {
+		gormConfig = gorm.Config{
+			Logger: logger.New(
+				log.New(os.Stdout, "\r\n", log.LstdFlags),
+				logger.Config{
+					SlowThreshold: time.Second,
+					LogLevel:      logger.Info,
+					Colorful:      true,
+				},
+			),
+		}
+	}
+
+	db, err := gorm.Open(postgres.Open(dsn), &gormConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
 	sqlDB, err := db.DB()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get SQL DB: %w", err)
 	}
 
 	sqlDB.SetMaxIdleConns(10)
@@ -42,8 +57,7 @@ func ConnectDB(config utils.AppConfig) (*gorm.DB, error) {
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"").Error; err != nil {
-		log.Fatalf("failed to create extension uuid-ossp: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to create extension uuid-ossp: %w", err)
 	}
 
 	if err := db.AutoMigrate(
@@ -59,7 +73,7 @@ func ConnectDB(config utils.AppConfig) (*gorm.DB, error) {
 		&models.Order{},
 		&models.OrderProduct{},
 	); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
 	return db, nil
