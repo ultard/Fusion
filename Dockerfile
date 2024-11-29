@@ -17,8 +17,8 @@ FROM alpine:edge
 
 WORKDIR /src
 
+RUN apk --no-cache add ca-certificates
 COPY ./app/templates ./templates
 COPY --from=build /tmp/main .
-RUN apk --no-cache add ca-certificates
 
 ENTRYPOINT ["/src/main"]
