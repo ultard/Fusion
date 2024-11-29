@@ -39,8 +39,8 @@ func RegisterProductRoutes(app *fiber.App, db *gorm.DB) {
 func (h *ProductHandler) GetProducts(c *fiber.Ctx) error {
 	var products []models.Product
 	if err := h.db.
-		Preload("Review").
-		Preload("Category").
+		Preload("Reviews").
+		Preload("Categories").
 		Find(&products).
 		Error; err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "could not retrieve products")
@@ -72,8 +72,8 @@ func (h *ProductHandler) GetProduct(c *fiber.Ctx) error {
 
 	var product models.Product
 	if err := h.db.
-		Preload("Review").
-		Preload("Category").
+		Preload("Reviews").
+		Preload("Categories").
 		First(&product, "id = ?", parsedId).
 		Error; err != nil {
 		return fiber.NewError(fiber.StatusNotFound, "product not found")
@@ -95,11 +95,14 @@ func (h *ProductHandler) GetProduct(c *fiber.Ctx) error {
 
 // CreateProduct создает новый продукт
 func (h *ProductHandler) CreateProduct(c *fiber.Ctx) error {
+	user := c.Locals("current_user").(models.User)
+
 	var product models.Product
 	if err := c.BodyParser(&product); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid input")
 	}
 
+	product.UserID = user.ID
 	if err := h.db.Create(&product).Error; err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "could not create product")
 	}
@@ -146,7 +149,7 @@ func (h *ProductHandler) UpdateProduct(c *fiber.Ctx) error {
 		for _, categoryName := range *updateFields.Categories {
 			categories = append(categories, models.Category{Name: categoryName})
 		}
-		product.Categories = &categories
+		product.Categories = categories
 	}
 
 	product.Image = updateFields.Image

@@ -14,8 +14,8 @@ type Product struct {
 	Price       float64 `json:"price" gorm:"type:decimal(10,2)"`
 	Stock       int     `json:"stock"`
 	Image       *string
-	Categories  *[]Category `gorm:"many2many:product_category;"`
-	Reviews     *[]Review
+	Categories  []Category `gorm:"many2many:product_category;"`
+	Reviews     []Review
 	User        User
 
 	CreatedAt time.Time
@@ -25,7 +25,6 @@ type Product struct {
 
 type Category struct {
 	ID          uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
-	ProductID   uuid.UUID `gorm:"type:uuid;"`
 	Name        string
 	Description string
 	Products    []Product `gorm:"many2many:product_category;"`
@@ -37,7 +36,7 @@ type Category struct {
 
 type Review struct {
 	ID        uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
-	ProductID uuid.UUID `gorm:"type:uuid;"`
+	ProductID uuid.UUID `gorm:"type:uuid;index"`
 	UserID    uuid.UUID `gorm:"type:uuid;"`
 	Rating    float64
 	Comment   string
@@ -49,8 +48,8 @@ type Review struct {
 
 type Favourite struct {
 	ID        uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
-	ProductID uuid.UUID `gorm:"type:uuid;"`
-	UserID    uuid.UUID `gorm:"type:uuid;"`
+	ProductID uuid.UUID `gorm:"type:uuid;index"`
+	UserID    uuid.UUID `gorm:"type:uuid;index"`
 
 	User    User
 	Product Product
