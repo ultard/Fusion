@@ -32,5 +32,5 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:${{ env.tag }}
+            ghcr.io/${{ github.repository_owner }}/${{ github.repository | toLower }}:${{ env.tag }}
 
