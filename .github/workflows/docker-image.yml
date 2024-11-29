@@ -25,6 +25,9 @@ jobs:
       - name: Determine Docker tag
         id: tag
         run: echo "tag=$(echo ${{ github.ref_name }} | sed 's|refs/heads/||' | sed 's|refs/tags/||')" >> $GITHUB_ENV
+
+      - name: Convert repository name to lowercase
+        run: echo "repository_name=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
       
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -32,5 +35,4 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ github.repository | toLower }}:${{ env.tag }}
-
+            ghcr.io/${{ github.repository_owner }}/${{ env.repository_name }}:${{ env.tag }}
